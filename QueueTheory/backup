@@ -1,0 +1,6 @@
+function getProductByID(id){
+$.ajax({Type:'GET',url:'./index1.php/prodController/getProductByID/' + id,success: function(jData)
+{console.log("Obj: ", jData);},error: function(error){console.log("Error: " + error);}
+ });
+  console.log(id);
+}

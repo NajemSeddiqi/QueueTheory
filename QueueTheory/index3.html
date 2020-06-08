@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="se" xml:lang="se">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/series-label.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script
+        src="https://code.highcharts.com/modules/export-data.js"></script<script src="https://www.highcharts.com/media/com_demo/js/highslide-full.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://www.highcharts.com/media/com_demo/css/highslide.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    <style>
+        #inputHide {
+            display: none;
+        }
+
+        .btn {
+            background-color: white;
+            border: groove;
+        }
+
+        .inputValues {
+            width: 70%;
+        }
+
+        .chart1 {
+            margin: auto;
+            width: 70%;
+        }
+
+        .chart2 {
+            margin: auto;
+            width: 70%;
+        }
+
+        .tbl {
+            margin: auto;
+            width: 70%;
+        }
+
+        .form-group {
+            display: inline;
+            margin: auto;
+        }
+
+        .btns {
+            padding: 10px;
+            display: block;
+        }
+
+        /*Form*/
+        #myForm {
+            display: flex;
+            margin: 25px;
+            justify-content: center;
+            align-items: center;
+            padding-left: 80px;
+        }
+    </style>
+    <!--Translate functions-->
+    <script>
+
+        //Göra våra uträkningar och skickar vidare de till två funktioner, en för sql och en för excel fil
+        function calculateValues() {
+            let arrival = parseFloat($("#arrivalInput").val());
+            let service = parseFloat($("#serviceInput").val());
+
+            let Lq = Math.pow(arrival, 2) / (service * (service - arrival));
+            Lq = parseFloat(Math.round(Lq * 100) / 100).toFixed(2);
+
+            let Ls = arrival / (service - arrival);
+            Ls = parseFloat(Math.round(Ls * 100) / 100).toFixed(2);
+
+            let Ws = (1 / (service - arrival)) * 60;
+            Ws = parseFloat(Math.round(Ws * 100) / 100).toFixed(2);
+
+            let Wq = (arrival / ((service - arrival) * service)) * 60;
+            Wq = parseFloat(Math.round(Wq * 100) / 100).toFixed(2);
+
+            let PBusy = (arrival / service);
+            PBusy = parseFloat(Math.round(PBusy * 100) / 100).toFixed(2);
+
+            let LE = (1 - (arrival / service));
+            LE = parseFloat(Math.round(LE * 100) / 100).toFixed(2);
+
+
+            //tilldelar texfälten våra uträknade värden
+            document.getElementById("Lq").value = Lq;
+            document.getElementById("Ls").value = Ls;
+            document.getElementById("Ws").value = Ws;
+            document.getElementById("Wq").value = Wq;
+            document.getElementById("PBusy").value = PBusy;
+            document.getElementById("LE").value = LE;
+
+
+            //postar datat
+            let postData = { ARRIVAL_RATE: arrival, SERVICE_RATE: service, LQ: Lq, LS: Ls, WS: Ws, WQ: Wq, PBUSY: PBusy, LE: LE };
+            insertValues(postData);
+            //insertData(postData);
+
+            function insertValues() {
+                console.log(postData);
+                console.log(arrival);
+                if ($('#arrivalInput').val().length === 0 || $('#serviceInput').val().length === 0) {
+                    alert("fyll i fälten");
+                } else {
+                    $.ajax({
+                        type: 'POST',
+                        data: postData,
+                        url: './index1.php/prodController/insertValues',
+                        success: function (res, data) {
+                            console.log("success: ", res, data);
+                        },
+                        error: function (res, data) {
+                            console.log("error: ", res, data);
+                        }
+                    });
+                }
+            }
+
+            // function insertData(){
+            //     $.ajax({
+            //         type: 'POST',
+            //         data: postData,
+            //         url: './index1.php/prodController/insertData',
+            //         success: function () {
+            //             console.log("SecondSuccess");
+            //         },
+            //         error: function () {
+            //             console.log("error");
+            //         }
+            //     });
+            // }
+        }
+
+        function clearTable() {
+            $.getJSON('./index1.php/prodController/clearTable', function () {
+                console.log("Cleared");
+            });
+        }
+
+        //hämtar data från excel fil, använder inte denna för visa data på hemsidan
+        // function getCsvData(){
+        //     $.ajax({
+        //         type: 'GET',
+        //         dataType: "json",
+        //         url: "./index1.php/prodController/getCsvData",
+        //         success: function (data) {
+        //             console.log(data);
+        //             chartManipulation(data);
+        //             for (let i = 0; i < data.length; i++) {
+        //                 let tr = document.createElement("tr");
+        //                 let th = document.createElement("th");
+        //                 th.setAttribute("scope", "row");
+        //                 th.innerHTML = (i + 1).toString();
+        //                 tr.appendChild(th);
+
+        //                 let names = ["arrivalRate", "serviceRate", "Lq", "Ls", "Ws", "Wq", "PBusy", "LE"];
+        //                 let namesId = ["arrivalRate", "serviceRate", "lq", "ls", "ws", "wq", "pbusy", "le"];
+        //                 for (let j = 2; j < data[i].length; j++) {
+        //                     let td = document.createElement("td");
+        //                     td.setAttribute("class", names[j]);
+        //                     td.setAttribute("id", namesId[j]);
+        //                     td.innerHTML = data[i][j];
+        //                     tr.appendChild(td);
+        //                 }
+        //                 document.getElementById("tableBody").appendChild(tr);
+        //             }
+        //         }
+        //     });
+        // }
+
+        //hämtar data från en databas där våra beräkningar är lagrade och appendar de i enlighet med vår sidas struktur
+        function getCalcs() {
+            $.ajax({
+                type: 'GET',
+                url: './index1.php/prodController/getCalcs',
+                dataType: 'json',
+                success: function (jData) {
+                    chartManipulation(jData);
+                    $.each(jData, function (i, item) {
+                        let tr = document.createElement("tr");
+                        let th = document.createElement("th");
+                        th.setAttribute("scope", "row");
+                        th.innerHTML = (i + 1).toString();
+                        tr.appendChild(th);
+
+                        $.each(item, function (j, subItem) {
+                            let td = document.createElement("td");
+                            td.innerHTML = parseFloat(jData[i][j]).toFixed(2);
+                            tr.appendChild(td);
+                        });
+                        document.getElementById("tableBody").appendChild(tr);
+                    });
+                },
+                error: function () {
+                    alert('Error :' + jsonData);
+                }
+            });
+        }
+
+        //manipulerar datat från databasen och pushar de till arrayer som sedan används i vår chart och Stapeldiagram
+        function chartManipulation(item) {
+            let Lq = [];
+            let Ls = [];
+            let Ws = [];
+            let Wq = [];
+            let PBusy = [];
+            let LE = [];
+
+            for (let i = 0; i < item.length; i++) {
+                Lq.push(parseFloat(item[i].LQ));
+                Ls.push(parseFloat(item[i].LS));
+                Ws.push(parseFloat(item[i].WS));
+                Wq.push(parseFloat(item[i].WQ));
+                PBusy.push(parseFloat(item[i].PBUSY));
+                LE.push(parseFloat(item[i].LE));
+            }
+
+            let chart1 = new Highcharts.chart('chart1', {
+                title: {
+                    text: 'Linjegraf'
+                },
+
+                subtitle: {
+                    text: 'Beräkningar av fiktiva data'
+                },
+
+                yAxis: {
+                    title: {
+                        text: 'Värden'
+                    }
+                },
+                xAxis: {
+                    title: {
+                        text: 'Köberäkningar'
+                    }
+                },
+                legend: {
+                    layout: 'vertical',
+                    align: 'right',
+                    verticalAlign: 'middle'
+                },
+
+                plotOptions: {
+                    series: {
+                        pointStart: 5,
+                        pointInterval: 5
+                    }
+                },
+
+                series: [{
+                    name: 'Medelantal kunder i kön',
+                    data: Lq
+                }, {
+                    name: "Medelantal kunder i systemet",
+                    data: Ls
+                }, {
+                    name: "Väntetid i systemet",
+                    data: Ws
+                }, {
+                    name: "Väntetid i kön",
+                    data: Wq
+                }, {
+                    name: "Upptagen att betjäna",
+                    data: PBusy
+                }, {
+                    name: "Chans att kön är tom",
+                    data: LE
+                }]
+            });
+
+            let chart2 = new Highcharts.chart('chart2', {
+                chart: {
+                    type: 'column'
+                },
+                title: {
+                    text: 'Stapeldiagram'
+                },
+                subtitle: {
+                    text: 'Beräkningar av fiktiva data'
+                },
+                xAxis: {
+                    title: {
+                        text: 'Köberäkningar'
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: 'Värden'
+                    }
+                },
+                tooltip: {
+                    headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                    pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                        '<td style="padding:0"><b>{point.y:.1f}</b></td></tr>',
+                    footerFormat: '</table>',
+                    shared: true,
+                    useHTML: true
+                },
+                plotOptions: {
+                    column: {
+                        pointPadding: 0.2,
+                        borderWidth: 5
+                    }
+                },
+
+                series: [{
+                    name: 'Medelantal kunder i kön',
+                    data: Lq
+                }, {
+                    name: "Medelantal kunder i systemet",
+                    data: Ls
+                }, {
+                    name: "Väntetid i systemet",
+                    data: Ws
+                }, {
+                    name: "Väntetid i kön",
+                    data: Wq
+                }, {
+                    name: "Upptagen att betjäna",
+                    data: PBusy
+                }, {
+                    name: "Chans att kön är tom",
+                    data: LE
+                }]
+            });
+        }
+
+        $(document).ready(function () {
+            getCalcs();
+            console.log(Math.pow(2, 6));
+        });
+
+    </script>
+    <script type="text/javascript">
+
+
+    </script>
+</head>
+
+<body>
+    <div id="container">
+        <div class="inputValues" id="inputValues">
+            <form id="myForm">
+                <div class="form-group">
+                    <label for="arrivalInput">Arrival rate</label>
+                    <input type="number" id="arrivalInput" name="ARRIVAL_RATE">
+                    <label for="serviceInput">Service rate</label>
+                    <input type="number" id="serviceInput" name="SERVICE_RATE">
+                </div>
+                <div class="btns">
+                    <button class="btn" onclick="calculateValues()">Beräkna</button>
+                    <button class="btn" onclick="clearTable()">Rensa</button>
+                </div>
+                <div id="inputHide">
+                    <input type="text" id="Lq" name="LQ">
+                    <input type="text" id="Ls" name="LS">
+                    <input type="text" id="Ws" name="WS">
+                    <input type="text" id="Wq" name="WQ">
+                    <input type="text" id="PBusy" name="PBUSY">
+                    <input type="text" id="LE" name="LE">
+                </div>
+            </form>
+        </div>
+
+        <div class="row" id="">
+            <div class="tbl" id="tablecont">
+                <table class="table" id="myTable">
+                    <thead>
+                        <tr>
+                            <th> </th>
+                            <th>Arrival rate</th>
+                            <th>Service rate</th>
+                            <th>Antal kunder i kön</th>
+                            <th>Medel antal kunder i systemet</th>
+                            <th>Väntetid i systemet</th>
+                            <th>Väntetid i kön</th>
+                            <th>Upptagen att betjäna</th>
+                            <th>Chans att kön är tom</th>
+                        </tr>
+                        <hr>
+                    </thead>
+                    <tbody id="tableBody" class="tableBody">
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div id="chart1" class="chart1"></div>
+    <div id="chart2" class="chart2"></div>
+
+
+</body>
+
+</html>
